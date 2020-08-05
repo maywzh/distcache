@@ -2,6 +2,7 @@ package lru
 
 import "container/list"
 
+// Cache is the basic data structure
 type Cache struct {
 	maxBytes  int64
 	nbytes    int64
@@ -15,11 +16,13 @@ type entry struct {
 	value Value
 }
 
+// Value the interface
 type Value interface {
 	Len() int
 }
 
-func New(maxBytes int64, onEvicted func(string, Value)) *cache {
+// New is the Constructor of Cache
+func New(maxBytes int64, onEvicted func(string, Value)) *Cache {
 	return &Cache{
 		maxBytes:  maxBytes,
 		ll:        list.New(),
@@ -28,7 +31,8 @@ func New(maxBytes int64, onEvicted func(string, Value)) *cache {
 	}
 }
 
-func (c *Cache) Get(key string) (value Value, ok book) {
+// Get element
+func (c *Cache) Get(key string) (value Value, ok bool) {
 	if ele, ok := c.cache[key]; ok {
 		c.ll.MoveToFront(ele)
 		kv := ele.Value.(*entry)
@@ -37,19 +41,39 @@ func (c *Cache) Get(key string) (value Value, ok book) {
 	return
 }
 
-func (c *Cache) RemoveOldest() {
-	ele := c.ll.Back()
-	if ele != nil { //modify and move to front
+// Add add new element, modify if exists
+func (c *Cache) Add(key string, value Value) {
+	if ele, ok := c.cache[key]; ok {
 		c.ll.MoveToFront(ele)
 		kv := ele.Value.(*entry)
-		c.nbytes += int64(value.len()) - int64(kv.value.Len())
+		c.nbytes += int64(value.Len()) - int64(kv.value.Len())
 		kv.value = value
 	} else {
 		ele := c.ll.PushFront(&entry{key, value})
 		c.cache[key] = ele
-		c.nbytes += int64(len(key) + int64(value.Len()))
+		c.nbytes += int64(len(key)) + int64(value.Len())
 	}
 	for c.maxBytes != 0 && c.maxBytes < c.nbytes {
 		c.RemoveOldest()
 	}
+}
+
+// RemoveOldest remove least recent used element
+func (c *Cache) RemoveOldest() {
+	ele := c.ll.Back()
+	if ele != nil {
+		c.ll.Remove(ele)
+		kv := ele.Value.(*entry)
+		delete(c.cache, kv.key)
+		c.nbytes -= int64(len(kv.key)) + int64(kv.value.Len())
+		if c.OnEvicted != nil {
+			c.OnEvicted(kv.key, kv.value)
+		}
+
+	}
+}
+
+// Len return len of deque
+func (c *Cache) Len() int {
+	return c.ll.Len()
 }
