@@ -11,7 +11,7 @@ func (v ByteView) Len() int {
 }
 
 // ByteSlice returns a copy of the data as a byte slice.
-func ByteSlice(v ByteView) []byte {
+func (v ByteView) ByteSlice() []byte {
 	return cloneBytes(v.b)
 }
 
