@@ -8,8 +8,8 @@ kkk not exist
 */
 
 import (
-	"fmt"
 	"distcache"
+	"fmt"
 	"log"
 	"net/http"
 )
@@ -21,7 +21,7 @@ var db = map[string]string{
 }
 
 func main() {
-	distcache.NewGroup("scores", 2<<10, distcache.GetterFunc(
+	distcache.NewNode("scores", 2<<10, distcache.GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
 			if v, ok := db[key]; ok {

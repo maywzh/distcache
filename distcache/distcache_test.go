@@ -26,8 +26,8 @@ func TestGetter(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	loadCounts := make(map[string]int, len(db))
-	// Build new group
-	gee := NewGroup("scores", 2<<10, GetterFunc(
+	// Build new node
+	gee := NewNode("scores", 2<<10, GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
 			if v, ok := db[key]; ok {
@@ -53,16 +53,16 @@ func TestGet(t *testing.T) {
 	}
 }
 
-func TestGetGroup(t *testing.T) {
-	groupName := "scores"
-	NewGroup(groupName, 2<<10, GetterFunc(func(key string) ([]byte, error) {
+func TestGetNode(t *testing.T) {
+	nodeName := "scores"
+	NewNode(nodeName, 2<<10, GetterFunc(func(key string) ([]byte, error) {
 		return []byte("su"), nil
 	}))
-	if group := GetGroup(groupName); group == nil || group.name != groupName {
-		t.Fatalf("group %s not exist", groupName)
+	if node := GetNode(nodeName); node == nil || node.name != nodeName {
+		t.Fatalf("node %s not exist", nodeName)
 	}
 
-	if group := GetGroup("name"); group != nil {
-		t.Fatalf("expect nil, but %s got", group.name)
+	if node := GetNode("name"); node != nil {
+		t.Fatalf("expect nil, but %s got", node.name)
 	}
 }

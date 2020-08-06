@@ -35,23 +35,23 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic("HTTPPool serving unexpected path: " + r.URL.Path)
 	}
 	p.Log("%s %s", r.Method, r.URL.Path)
-	// /<basepath>/<groupname>/<key> required
+	// /<basepath>/<nodename>/<key> required
 	parts := strings.SplitN(r.URL.Path[len(p.basePath):], "/", 2)
 	if len(parts) != 2 {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 
-	groupName := parts[0]
+	nodeName := parts[0]
 	key := parts[1]
 
-	group := GetGroup(groupName)
-	if group == nil {
-		http.Error(w, "no such group: "+groupName, http.StatusNotFound)
+	node := GetNode(nodeName)
+	if node == nil {
+		http.Error(w, "no such node: "+nodeName, http.StatusNotFound)
 		return
 	}
 
-	view, err := group.Get(key)
+	view, err := node.Get(key)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

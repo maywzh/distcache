@@ -6,8 +6,8 @@ import (
 	"sync"
 )
 
-// A Group is a cache namespace and associated data loaded spread over
-type Group struct {
+// A Node is a cache namespace and associated data loaded spread over
+type Node struct {
 	name      string // The instance name
 	getter    Getter // The missing callback
 	mainCache cache  // The concurrent cache
@@ -27,37 +27,37 @@ func (f GetterFunc) Get(key string) ([]byte, error) {
 }
 
 var (
-	mu     sync.RWMutex
-	groups = make(map[string]*Group)
+	mu    sync.RWMutex
+	nodes = make(map[string]*Node)
 )
 
-// NewGroup create a new instance of Group
-func NewGroup(name string, cacheBytes int64, getter Getter) *Group {
+// NewNode create a new instance of Node
+func NewNode(name string, cacheBytes int64, getter Getter) *Node {
 	if getter == nil {
 		panic("nil Getter")
 	}
 	mu.Lock()
 	defer mu.Unlock()
-	g := &Group{
+	g := &Node{
 		name:      name,
 		getter:    getter,
 		mainCache: cache{cacheBytes: cacheBytes},
 	}
-	groups[name] = g
+	nodes[name] = g
 	return g
 }
 
-// GetGroup returns the named group previously created with NewGroup, or
-// nil if there's no such group.
-func GetGroup(name string) *Group {
+// GetNode returns the named node previously created with NewNode, or
+// nil if there's no such node.
+func GetNode(name string) *Node {
 	mu.RLock()
-	g := groups[name]
+	g := nodes[name]
 	mu.RUnlock()
 	return g
 }
 
 // Get value for a key from cache
-func (g *Group) Get(key string) (ByteView, error) {
+func (g *Node) Get(key string) (ByteView, error) {
 	if key == "" {
 		return ByteView{}, fmt.Errorf("key is required")
 	}
@@ -69,12 +69,12 @@ func (g *Group) Get(key string) (ByteView, error) {
 }
 
 // Load from database backend
-func (g *Group) load(key string) (value ByteView, err error) {
+func (g *Node) load(key string) (value ByteView, err error) {
 	return g.getLocally(key)
 }
 
 // Get from locally database
-func (g *Group) getLocally(key string) (ByteView, error) {
+func (g *Node) getLocally(key string) (ByteView, error) {
 	bytes, err := g.getter.Get(key)
 	if err != nil {
 		return ByteView{}, err
@@ -85,6 +85,6 @@ func (g *Group) getLocally(key string) (ByteView, error) {
 }
 
 // populateCache add bytes to cache
-func (g *Group) populateCache(key string, value ByteView) {
+func (g *Node) populateCache(key string, value ByteView) {
 	g.mainCache.add(key, value)
 }
