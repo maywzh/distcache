@@ -504,3 +504,4 @@ GitHub.sublime-settings
 *.ppt
 
 .vscode
+.idea
