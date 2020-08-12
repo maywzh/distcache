@@ -11,6 +11,7 @@ type Node struct {
 	name      string // The instance name
 	getter    Getter // The missing callback
 	mainCache cache  // The concurrent cache
+	peers     PeerPicker
 }
 
 // A Getter loads data for a key.
@@ -68,11 +69,6 @@ func (g *Node) Get(key string) (ByteView, error) {
 	return g.load(key)
 }
 
-// Load from database backend
-func (g *Node) load(key string) (value ByteView, err error) {
-	return g.getLocally(key)
-}
-
 // Get from locally database
 func (g *Node) getLocally(key string) (ByteView, error) {
 	bytes, err := g.getter.Get(key)
@@ -87,4 +83,32 @@ func (g *Node) getLocally(key string) (ByteView, error) {
 // populateCache add bytes to cache
 func (g *Node) populateCache(key string, value ByteView) {
 	g.mainCache.add(key, value)
+}
+
+// RegisterPeers registers a PeerPicker for choosing remote peer
+func (g *Node) RegisterPeers(peers PeerPicker) {
+	if g.peers != nil {
+		panic("RegisterPeerPicker called more than once")
+	}
+	g.peers = peers
+}
+
+func (g *Node) load(key string) (value ByteView, err error) {
+	if g.peers != nil {
+		if peer, ok := g.peers.PickPeer(key); ok {
+			if value, err = g.getFromPeer(peer, key); err == nil {
+				return value, nil
+			}
+			log.Println("[GeeCache] Failed to get from peer", err)
+		}
+	}
+	return g.getLocally(key)
+}
+
+func (g *Node) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
+	bytes, err := peer.Get(g.name, key)
+	if err != nil {
+		return ByteView{}, err
+	}
+	return ByteView{b: bytes}, nil
 }

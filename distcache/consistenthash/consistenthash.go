@@ -6,6 +6,7 @@ import (
 	"strconv"
 )
 
+// Hash maps bytes to uint32
 type Hash func(data []byte) uint32
 
 // Map constains all hashed keys
@@ -34,9 +35,9 @@ func New(replicas int, fn Hash) *Map {
 func (m *Map) Add(keys ...string) {
 	for _, key := range keys {
 		for i := 0; i < m.replicas; i++ {
-			hash := int(m.hash([]byte(strconv.Itoa(i) + key)))
-			m.keys = append(m.keys, hash)
-			m.hashMap[hash] = key
+			hashv := int(m.hash([]byte(strconv.Itoa(i) + key)))
+			m.keys = append(m.keys, hashv)
+			m.hashMap[hashv] = key
 		}
 	}
 	sort.Ints(m.keys)
@@ -52,5 +53,4 @@ func (m *Map) Get(key string) string {
 		return m.keys[i] >= hash
 	})
 	return m.hashMap[m.keys[idx%len(m.keys)]]
-
 }
