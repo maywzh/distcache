@@ -121,7 +121,6 @@ func (h *httpGetter) Get(node string, key string) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("reading response body: %v", err)
 	}
-
 	return bytes, nil
 }
 

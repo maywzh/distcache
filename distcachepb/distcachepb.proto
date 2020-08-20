@@ -3,7 +3,7 @@ syntax = "proto3";
 package distcachepb;
 
 message Request {
-  string group = 1;
+  string node = 1;
   string key = 2;
 }
 

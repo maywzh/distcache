@@ -1,6 +1,7 @@
 package distcache
 
 import (
+	pb "distcache/distcachepb"
 	"fmt"
 	"log"
 	"sync"
@@ -106,9 +107,14 @@ func (g *Node) load(key string) (value ByteView, err error) {
 }
 
 func (g *Node) getFromPeer(peer PeerGetter, key string) (ByteView, error) {
-	bytes, err := peer.Get(g.name, key)
+	req := &pb.Request{
+		Node: g.name,
+		Key:  key,
+	}
+	res := &pb.Response{}
+	err := peer.Get(req, res)
 	if err != nil {
 		return ByteView{}, err
 	}
-	return ByteView{b: bytes}, nil
+	return ByteView{b: res.Value}, nil
 }
