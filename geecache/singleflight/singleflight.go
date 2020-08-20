@@ -2,6 +2,7 @@ package singleflight
 
 import "sync"
 
+// call is an in-flight or completed Do call
 type call struct {
 	wg  sync.WaitGroup
 	val interface{}
@@ -11,8 +12,8 @@ type call struct {
 // Group represents a class of work and forms a namespace in which
 // units of work can be executed with duplicate suppression.
 type Group struct {
-	mu sync.Mutex
-	m  map[string]*call
+	mu sync.Mutex       // protects m
+	m  map[string]*call // lazily initialized
 }
 
 // Do executes and returns the results of the given function, making

@@ -1,4 +1,4 @@
-package distcache
+package geecache
 
 import (
 	"fmt"
@@ -26,8 +26,7 @@ func TestGetter(t *testing.T) {
 
 func TestGet(t *testing.T) {
 	loadCounts := make(map[string]int, len(db))
-	// Build new node
-	gee := NewNode("scores", 2<<10, GetterFunc(
+	gee := NewGroup("scores", 2<<10, GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
 			if v, ok := db[key]; ok {
@@ -38,31 +37,31 @@ func TestGet(t *testing.T) {
 				return []byte(v), nil
 			}
 			return nil, fmt.Errorf("%s not exist", key)
-		},
-	))
+		}))
+
 	for k, v := range db {
 		if view, err := gee.Get(k); err != nil || view.String() != v {
 			t.Fatal("failed to get value of Tom")
-		} // load from callback function
+		}
 		if _, err := gee.Get(k); err != nil || loadCounts[k] > 1 {
 			t.Fatalf("cache %s miss", k)
-		} // cache hit
+		}
 	}
+
 	if view, err := gee.Get("unknown"); err == nil {
 		t.Fatalf("the value of unknow should be empty, but %s got", view)
 	}
 }
 
-func TestGetNode(t *testing.T) {
-	nodeName := "scores"
-	NewNode(nodeName, 2<<10, GetterFunc(func(key string) ([]byte, error) {
-		return []byte("su"), nil
-	}))
-	if node := GetNode(nodeName); node == nil || node.name != nodeName {
-		t.Fatalf("node %s not exist", nodeName)
+func TestGetGroup(t *testing.T) {
+	groupName := "scores"
+	NewGroup(groupName, 2<<10, GetterFunc(
+		func(key string) (bytes []byte, err error) { return }))
+	if group := GetGroup(groupName); group == nil || group.name != groupName {
+		t.Fatalf("group %s not exist", groupName)
 	}
 
-	if node := GetNode("name"); node != nil {
-		t.Fatalf("expect nil, but %s got", node.name)
+	if group := GetGroup(groupName + "111"); group != nil {
+		t.Fatalf("expect nil, but %s got", group.name)
 	}
 }

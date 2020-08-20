@@ -1,18 +1,21 @@
-package distcache
+package geecache
 
 import (
-	"distcache/consistenthash"
 	"fmt"
+	"geecache/consistenthash"
+	pb "geecache/geecachepb"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"net/url"
 	"strings"
 	"sync"
+
+	"github.com/golang/protobuf/proto"
 )
 
 const (
-	defaultBasePath = "/_distcache/"
+	defaultBasePath = "/_geecache/"
 	defaultReplicas = 50
 )
 
@@ -45,30 +48,37 @@ func (p *HTTPPool) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		panic("HTTPPool serving unexpected path: " + r.URL.Path)
 	}
 	p.Log("%s %s", r.Method, r.URL.Path)
-	// /<basepath>/<nodename>/<key> required
+	// /<basepath>/<groupname>/<key> required
 	parts := strings.SplitN(r.URL.Path[len(p.basePath):], "/", 2)
 	if len(parts) != 2 {
 		http.Error(w, "bad request", http.StatusBadRequest)
 		return
 	}
 
-	nodeName := parts[0]
+	groupName := parts[0]
 	key := parts[1]
 
-	node := GetNode(nodeName)
-	if node == nil {
-		http.Error(w, "no such node: "+nodeName, http.StatusNotFound)
+	group := GetGroup(groupName)
+	if group == nil {
+		http.Error(w, "no such group: "+groupName, http.StatusNotFound)
 		return
 	}
 
-	view, err := node.Get(key)
+	view, err := group.Get(key)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Write the value to the response body as a proto message.
+	body, err := proto.Marshal(&pb.Response{Value: view.ByteSlice()})
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	w.Header().Set("Content-Type", "application/octet-stream")
-	w.Write(view.ByteSlice())
+	w.Write(body)
 }
 
 // Set updates the pool's list of peers.
@@ -100,28 +110,33 @@ type httpGetter struct {
 	baseURL string
 }
 
-func (h *httpGetter) Get(node string, key string) ([]byte, error) {
+func (h *httpGetter) Get(in *pb.Request, out *pb.Response) error {
 	u := fmt.Sprintf(
 		"%v%v/%v",
 		h.baseURL,
-		url.QueryEscape(node),
-		url.QueryEscape(key),
+		url.QueryEscape(in.GetGroup()),
+		url.QueryEscape(in.GetKey()),
 	)
 	res, err := http.Get(u)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("server returned: %v", res.Status)
+		return fmt.Errorf("server returned: %v", res.Status)
 	}
 
 	bytes, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		return nil, fmt.Errorf("reading response body: %v", err)
+		return fmt.Errorf("reading response body: %v", err)
 	}
-	return bytes, nil
+
+	if err = proto.Unmarshal(bytes, out); err != nil {
+		return fmt.Errorf("decoding response body: %v", err)
+	}
+
+	return nil
 }
 
 var _ PeerGetter = (*httpGetter)(nil)

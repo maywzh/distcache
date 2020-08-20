@@ -1,11 +1,10 @@
-package distcache
+package geecache
 
 import (
-	"distcache/lru"
+	"geecache/lru"
 	"sync"
 )
 
-// cache add mutex to lru
 type cache struct {
 	mu         sync.Mutex
 	lru        *lru.Cache
@@ -21,14 +20,16 @@ func (c *cache) add(key string, value ByteView) {
 	c.lru.Add(key, value)
 }
 
-func (c *cache) get(key string) (v ByteView, ok bool) {
+func (c *cache) get(key string) (value ByteView, ok bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if c.lru == nil {
 		return
 	}
+
 	if v, ok := c.lru.Get(key); ok {
 		return v.(ByteView), ok
 	}
+
 	return
 }
