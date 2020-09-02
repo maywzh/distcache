@@ -1,7 +1,7 @@
-package geecache
+package distcache
 
 import (
-	"geecache/lru"
+	"distcache/lru"
 	"sync"
 )
 

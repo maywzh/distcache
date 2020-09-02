@@ -9,9 +9,9 @@ kkk not exist
 */
 
 import (
+	"distcache"
 	"flag"
 	"fmt"
-	"geecache"
 	"log"
 	"net/http"
 )
@@ -22,8 +22,8 @@ var db = map[string]string{
 	"Sam":  "567",
 }
 
-func createGroup() *geecache.Group {
-	return geecache.NewGroup("scores", 2<<10, geecache.GetterFunc(
+func createGroup() *distcache.Group {
+	return distcache.NewGroup("scores", 2<<10, distcache.GetterFunc(
 		func(key string) ([]byte, error) {
 			log.Println("[SlowDB] search key", key)
 			if v, ok := db[key]; ok {
@@ -33,15 +33,15 @@ func createGroup() *geecache.Group {
 		}))
 }
 
-func startCacheServer(addr string, addrs []string, gee *geecache.Group) {
-	peers := geecache.NewHTTPPool(addr)
+func startCacheServer(addr string, addrs []string, gee *distcache.Group) {
+	peers := distcache.NewHTTPPool(addr)
 	peers.Set(addrs...)
 	gee.RegisterPeers(peers)
-	log.Println("geecache is running at", addr)
+	log.Println("distcache is running at", addr)
 	log.Fatal(http.ListenAndServe(addr[7:], peers))
 }
 
-func startAPIServer(apiAddr string, gee *geecache.Group) {
+func startAPIServer(apiAddr string, gee *distcache.Group) {
 	http.Handle("/api", http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			key := r.URL.Query().Get("key")

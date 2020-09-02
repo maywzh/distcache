@@ -1,9 +1,9 @@
-package geecache
+package distcache
 
 import (
+	"distcache/consistenthash"
+	pb "distcache/distcachepb"
 	"fmt"
-	"geecache/consistenthash"
-	pb "geecache/geecachepb"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	defaultBasePath = "/_geecache/"
+	defaultBasePath = "/_distcache/"
 	defaultReplicas = 50
 )
 

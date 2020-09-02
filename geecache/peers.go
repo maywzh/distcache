@@ -1,6 +1,6 @@
-package geecache
+package distcache
 
-import pb "geecache/geecachepb"
+import pb "distcache/distcachepb"
 
 // PeerPicker is the interface that must be implemented to locate
 // the peer that owns a specific key.
